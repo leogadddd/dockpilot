@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Dockpilot Immich import queue
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=1min
+AccuracySec=10s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
