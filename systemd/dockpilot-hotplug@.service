@@ -1,0 +1,11 @@
+[Unit]
+Description=Dockpilot USB workflow for /dev/%I
+After=local-fs.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/dockpilot
+ExecStart=/usr/bin/python3 -m dockpilot.hotplug --device /dev/%I
+TimeoutStartSec=infinity
+StandardOutput=journal
+StandardError=journal
