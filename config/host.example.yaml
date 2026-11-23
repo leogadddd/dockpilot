@@ -1,0 +1,19 @@
+version: 1
+
+targets:
+  immich-main:
+    type: immich
+    allowed_actions:
+      - immich.import
+
+host:
+  # Only recognised and explicitly approved filesystems may trigger jobs.
+  trusted_uuids:
+    - "REPLACE_WITH_FILESYSTEM_UUID"
+  shared_root: "/mnt/pve/media-hdd/dockpilot"
+  mount_root: "/mnt/dockpilot-drives"
+
+notifications:
+  provider: ntfy
+  server: "https://ntfy.example.com"
+  topic: homelab-alerts
