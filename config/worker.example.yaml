@@ -1,0 +1,18 @@
+version: 1
+
+targets:
+  immich-main:
+    type: immich
+    allowed_actions:
+      - immich.import
+
+worker:
+  enabled: true
+  shared_root: "/data/dockpilot"
+  immich_env_file: "/etc/dockpilot/immich.env"
+  cli_image: "ghcr.io/immich-app/immich-cli:latest"
+
+notifications:
+  provider: ntfy
+  server: "https://ntfy.example.com"
+  topic: homelab-alerts
