@@ -1,0 +1,25 @@
+version: 1
+
+name: "SanDisk Portable"
+description: "Import existing photo and video archive into Immich"
+
+jobs:
+  - id: immich-photo-import
+    action: immich.import
+    trigger: on-connect
+    enabled: true
+    source: "Immich-Backup/"
+    target: "immich-main"
+    mode: copy
+    options:
+      recursive: true
+      skip_duplicates: true
+      preserve_originals: true
+      verify: true
+    notifications:
+      enabled: true
+      topic: homelab-alerts
+      on_detected: true
+      on_start: true
+      on_success: true
+      on_failure: true
