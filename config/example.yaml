@@ -1,0 +1,16 @@
+version: 1
+
+# The agent never receives an API key from removable media.
+targets:
+  immich-main:
+    type: immich
+    # Used only by future upload worker; unused in dry-run.
+    url: "http://REPLACE_WITH_IMMICH_HOST:2283"
+    allowed_actions:
+      - immich.import
+
+notifications:
+  provider: ntfy
+  server: "https://ntfy.example.com"
+  topic: homelab-alerts
+  # Credentials supplied via NTFY_USERNAME and NTFY_PASSWORD.
