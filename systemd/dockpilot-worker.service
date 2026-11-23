@@ -1,0 +1,13 @@
+[Unit]
+Description=Dockpilot Immich import queue worker
+RequiresMountsFor=/data/dockpilot
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/dockpilot
+ExecStart=/usr/bin/python3 -m dockpilot.worker
+TimeoutStartSec=infinity
+StandardOutput=journal
+StandardError=journal
