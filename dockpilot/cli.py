@@ -13,6 +13,8 @@ from pathlib import Path
 
 import yaml
 
+from . import __version__
+
 MEDIA_EXTENSIONS = frozenset({
     ".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp",
     ".gif", ".tif", ".tiff", ".dng", ".raw", ".cr2", ".nef",
@@ -139,7 +141,11 @@ def notify_ntfy(config: dict, title: str, message: str) -> None:
     req = urllib.request.Request(
         url.rstrip("/") + "/" + topic,
         data=message.encode(),
-        headers={"Title": title, "Content-Type": "text/plain; charset=utf-8"},
+        headers={
+            "Title": title,
+            "Content-Type": "text/plain; charset=utf-8",
+            "User-Agent": f"Dockpilot/{__version__} (ntfy publisher)",
+        },
         method="POST",
     )
     user, password = os.environ.get("NTFY_USERNAME"), os.environ.get("NTFY_PASSWORD")
