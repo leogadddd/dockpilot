@@ -5,7 +5,7 @@ This is an **experimental** implementation. Test only with copies or non-critica
 ## Design
 
 - **Proxmox host:** udev triggers a systemd unit; the host checks a configured trusted UUID, mounts the drive read-only, validates `homelab.yaml`, stages and checksum-verifies the complete source archive on the persistent HDD, then writes an atomic JSON queue entry.
-- **Debian media VM:** a systemd timer reads queued jobs from the VirtioFS share. It starts the official Immich CLI Docker container with the staged folder mounted read-only and credentials from a root-owned environment file **on the VM**. Success leaves an audit receipt; failures leave the staged files intact and rename the queue item to `.failed` for deliberate review.
+- **Debian media VM:** a systemd timer reads queued jobs from the VirtioFS share. It starts the official Immich CLI Docker container with the staged folder mounted read-only and credentials from a root-owned environment file **on the VM**. Success leaves an audit receipt. An interrupted import stays queued, and upload failures retry with backoff.
 - **Notifications:** ntfy sends drive detected, staging started, upload queued, upload started, upload completed, and failures. Notifications are best effort; delivery requires configuring authentication/environment on **both** hosts.
 
 ## 1. On Proxmox host
@@ -68,6 +68,8 @@ sudo systemctl enable --now dockpilot-worker.timer
 
 Check `systemctl list-timers dockpilot-worker.timer` and `journalctl -u dockpilot-worker.service -n 50 --no-pager`.
 
+For an existing VM, stop both units before updating the checkout and copying the new service file, then run `sudo systemctl daemon-reload`. The existing worker config can be kept. If a container from the old worker was running, verify it has exited before starting the updated worker.
+
 ## 4. Run a full insertion test
 
 1. Check disk capacity. Staging plus uploaded assets requires roughly twice the archive size and spare room for thumbnails.
@@ -77,10 +79,37 @@ Check `systemctl list-timers dockpilot-worker.timer` and `journalctl -u dockpilo
 5. Inside the VM, follow `journalctl -fu dockpilot-worker.service`.
 6. Expect ntfy start/queued/completed/failure notifications. A successful CLI exit does not confirm that Immich's thumbnail jobs have completed.
 
-## Retry and security
+## Stop, resume, and retry
+
+Run these commands on the Debian media VM. To stop imports and keep them stopped across a reboot:
+
+```bash
+sudo systemctl disable --now dockpilot-worker.timer
+sudo systemctl stop dockpilot-worker.service
+```
+
+The worker stops its upload container and leaves the staged archive and queue record in place. To resume:
+
+```bash
+sudo systemctl enable --now dockpilot-worker.timer
+sudo systemctl start --no-block dockpilot-worker.service
+sudo journalctl -fu dockpilot-worker.service
+```
+
+The CLI scans the staged archive again and uses Immich's duplicate checks for assets already uploaded. An interrupted file can be uploaded again. If the timer stays enabled, it picks up unfinished jobs after a reboot.
+
+By default, Docker and upload failures are retried up to three times, with delays of 2, 4, and 8 minutes. The next timer tick starts each retry after its delay. Set `worker.max_retries` to `0` to disable automatic retries, and set `worker.retry_delay_seconds` to change the initial delay. Invalid jobs and exhausted retries are saved as `.failed`. After reviewing the cause in the journal, requeue a failed job by its ID:
+
+```bash
+cd /opt/dockpilot
+sudo python3 -m dockpilot.worker --retry JOB_ID
+```
+
+The next timer tick runs that job when the timer is enabled.
+
+## Receipts and security
 
 - After a **successful** import, the receipt prevents a second upload for the same UUID/job/target. The same drive will therefore not re-import later edits until you explicitly create a new job ID or clear the receipt.
-- If the CLI fails, the queue file is renamed `.failed`. Review the journal and the staged folder before renaming it back to `.json` to retry.
 - Keep the USB and staged copies until you have verified your assets appear in Immich and confirmed independent backups.
 - VM worker requires privileged Docker access; only system administrators may modify the queue, configs or staging directories. No user-supplied shell commands are executed.
 - `ntfy` uses `NTFY_USERNAME` and `NTFY_PASSWORD` in the service environment if login is required. Use a dedicated write-only publisher account in production.

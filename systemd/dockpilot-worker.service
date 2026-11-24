@@ -10,5 +10,7 @@ WorkingDirectory=/opt/dockpilot
 EnvironmentFile=-/etc/dockpilot/ntfy.env
 ExecStart=/usr/bin/python3 -m dockpilot.worker
 TimeoutStartSec=infinity
+TimeoutStopSec=60s
+KillMode=mixed
 StandardOutput=journal
 StandardError=journal

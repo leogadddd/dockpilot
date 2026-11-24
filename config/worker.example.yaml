@@ -11,6 +11,8 @@ worker:
   shared_root: "/data/dockpilot"
   immich_env_file: "/etc/dockpilot/immich.env"
   cli_image: "ghcr.io/immich-app/immich-cli:latest"
+  max_retries: 3
+  retry_delay_seconds: 120
 
 notifications:
   provider: ntfy
